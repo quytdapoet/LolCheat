@@ -112,4 +112,4 @@ Nếu injector này không hoạt động, thử:
 - Luôn chạy với quyền Administrator
 - Tắt Windows Defender tạm thời
 - Backup tài khoản trước khi test
-- Chỉ test trên custom game
+- Chỉ test trên custom games
