@@ -1,0 +1,77 @@
+name: Build LolCheat
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Visual Studio 2022
+      uses: microsoft/setup-msbuild@v1.3
+      
+    - name: Install DirectX SDK
+      run: |
+        # Download DirectX SDK (June 2010)
+        $url = "https://download.microsoft.com/download/A/E/7/AE743F1F-632B-4809-87A9-AA1BB3458E31/DXSDK_Jun10.exe"
+        $output = "$env:TEMP\DXSDK_Jun10.exe"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        
+        # Install DirectX SDK silently
+        Start-Process -FilePath $output -ArgumentList "/Q" -Wait
+        
+        # Set environment variables
+        $env:DXSDK_DIR = "C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\"
+        echo "DXSDK_DIR=$env:DXSDK_DIR" >> $env:GITHUB_ENV
+        
+    - name: Build Release x64
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: Build Release x86
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: Build Debug x64
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Debug /p:Platform=x64 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: Build Debug x86
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Debug /p:Platform=Win32 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: Upload Release x64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x64
+        path: LoL base/x64/Release/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Upload Release x86 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x86
+        path: LoL base/Release/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Upload Debug x64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Debug-x64
+        path: LoL base/x64/Debug/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Upload Debug x86 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Debug-x86
+        path: LoL base/Debug/LoL base.dll
+        if-no-files-found: warn

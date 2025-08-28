@@ -1,0 +1,46 @@
+name: Build LolCheat (Simple)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Visual Studio 2022 Build Tools
+      uses: microsoft/setup-msbuild@v1.3
+      
+    - name: Build Release x64
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: Build Release x86
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143 /verbosity:minimal
+        
+    - name: List build outputs
+      run: |
+        echo "=== Build Outputs ==="
+        Get-ChildItem -Path "LoL base" -Recurse -Name "*.dll" | ForEach-Object { Write-Host $_ }
+        
+    - name: Upload Release x64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x64
+        path: LoL base/x64/Release/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Upload Release x86 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x86
+        path: LoL base/Release/LoL base.dll
+        if-no-files-found: warn

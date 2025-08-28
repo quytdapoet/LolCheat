@@ -1,0 +1,61 @@
+name: Build LolCheat (VS2022)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Visual Studio 2022 Enterprise
+      uses: microsoft/setup-msbuild@v1.3
+      with:
+        msbuild-architecture: x64
+        msbuild-version: latest
+        
+    - name: Build Release x64
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /verbosity:minimal /p:UseMultiToolTask=true /p:CL_MPCount=0
+        
+    - name: Build Release x86
+      run: |
+        msbuild "LoL base/LoL base.sln" /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143 /verbosity:minimal /p:UseMultiToolTask=true /p:CL_MPCount=0
+        
+    - name: Find and list DLL files
+      run: |
+        echo "=== Searching for DLL files ==="
+        Get-ChildItem -Path "LoL base" -Recurse -Filter "*.dll" | ForEach-Object { 
+          Write-Host "Found: $($_.FullName)"
+          Write-Host "Size: $($_.Length) bytes"
+          Write-Host "---"
+        }
+        
+    - name: Upload Release x64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x64
+        path: LoL base/x64/Release/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Upload Release x86 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: LolCheat-Release-x86
+        path: LoL base/Release/LoL base.dll
+        if-no-files-found: warn
+        
+    - name: Create build summary
+      run: |
+        echo "## Build Summary" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ✅ Build completed successfully" >> $env:GITHUB_STEP_SUMMARY
+        echo "- 📦 Artifacts uploaded" >> $env:GITHUB_STEP_SUMMARY
+        echo "- 🔧 Platform: x64 and x86" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ⚙️ Configuration: Release" >> $env:GITHUB_STEP_SUMMARY
